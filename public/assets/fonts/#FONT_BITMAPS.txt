@@ -1,0 +1,22 @@
+What you CAN adjust:
+Font Size: You can change this via .setFontSize(px) or in the creator. However, since it is a bitmap, scaling it to a size other than its "baked" size (or an integer multiple) can cause blurring or "pixel-smearing".
+Alignment: You can use .setLeftAlign(), .setCenterAlign(), or .setRightAlign(). Note that this only works for multi-line text; it has no effect on a single line.
+Tint (Color): You can change the color using .setTint(color). This "multiplies" the color onto the existing font texture.
+Letter & Line Spacing: You can adjust these using .setLetterSpacing(px) and .setLineSpacing(px).
+Drop Shadow: Newer versions of Phaser (3.50+) support a basic .setDropShadow(x, y, color). 
+
+What you CANNOT adjust (directly):
+Stroke Thickness: You cannot apply a stroke or outline to Bitmap Text in code. To have a stroke, you must add it to the font characters in your image editor (like Photoshop) before generating the bitmap font files.
+Fill Patterns: Unlike regular text, you cannot apply gradients or complex fill patterns via code.
+Font Weight: You cannot toggle "Bold" or "Italic" in code. You must load a specific bold or italic version of the bitmap font. 
+
+Comparison Summary
+Feature 	        Bitmap Text	                        Regular Text
+Performance	        Extremely Fast (WebGL optimized)	Slower (requires canvas rasterization)
+Stroke/Outline	    No (must be in texture)	            Yes
+Alignment	        Multi-line only	                    All text
+Scaling	            Best at native/integer sizes	    Infinite (vector-based)
+
+Recommendation: Since you are using a Vite template, if you need a 
+stroke for a "Game Over" screen, bake the stroke into the font using 
+a tool like Snow BMF by adding an "Outline" effect during the export process.

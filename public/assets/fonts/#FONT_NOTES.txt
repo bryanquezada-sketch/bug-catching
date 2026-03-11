@@ -1,0 +1,87 @@
+Font 	            Native Export	Style / Vibe	        Best Use Case
+Press Start 2P	    8px	80s         Arcade / NES	        Retro HUDs, "Insert Coin" prompts, high scores, and tiny buttons.
+Jersey 10	        10px	        Athletic / Blocky	    Sports-themed games, large numbers, round counters, or "Level Start" headings.
+Silver	            12px	        Modern Pixel RPG	    Long dialogue blocks, NPC conversations, and lore text (highly readable).
+Jacquard 12	        12px	        Decorative / Gothic	    Fantasy themes, "Game Over" screens, or games with a needlepoint/woven aesthetic.
+Bitmgothic	        12px	        Clean / Technical	    Cyberpunk themes, terminal logs, inventory lists, or "system" messages.
+Yoster Island	    12px/16px	    Playful / Nintendo	    Casual games, friendly UI, tutorial pop-ups, and whimsical "Pop-up" text.
+
+-------
+
+press_start_2p was made with https://snowb.org/ at 8px. 
+Check your Game Resolution: If your game is "low-res" (e.g., 320x180 or 640x360), use 8px. 16px text will look massive on a small canvas.
+Check your Tile Size: If your characters and environment are based on 16x16 tiles, 16px text might feel more consistent with the "density" of your art.
+The "Retina" Exception: If you are targeting modern mobile devices with high pixel density, some developers export at 16px or 32px to ensure the text remains sharp even when the user zooms in or uses a high-DPI screen.
+
+
+To efficiently handle multiple fonts in a micro-game template, you should create a centralized Font Manager. This allows you to preload only the necessary assets and provides a single point of control for styling. 
+
+Font Manager Snippet
+This utility class manages the configuration and creation of your text objects.
+
+javascript
+class FontManager {
+    constructor(scene) {
+        this.scene = scene;
+        // Configuration for your specific font exports
+        this.fonts = {
+            RETRO: { key: 'pressStart', size: 8 },
+            SPORT: { key: 'jersey10', size: 10 },
+            DIALOG: { key: 'silver', size: 12 }
+        };
+    }
+
+    /**
+     * Preloads only the fonts you actually need for the current micro-game
+     * @param {string[]} fontKeys - Array of keys like ['RETRO', 'SPORT']
+     */
+    preload(fontKeys) {
+        fontKeys.forEach(type => {
+            const font = this.fonts[type];
+            this.scene.load.bitmapFont(
+                font.key, 
+                `assets/fonts/${font.key}.png`, 
+                `assets/fonts/${font.key}.xml`
+            );
+        });
+    }
+
+    /**
+     * Adds a crisp bitmap text object to the scene
+     */
+    addText(x, y, type, content, scale = 1) {
+        const config = this.fonts[type];
+        const text = this.scene.add.bitmapText(x, y, config.key, content, config.size);
+        
+        // Always use setScale for sizing up to maintain pixel-perfect edges
+        if (scale !== 1) text.setScale(scale);
+        
+        return text;
+    }
+}
+Use code with caution.
+
+Implementation in Your Scene
+You can now easily swap font styles without hardcoding strings everywhere. 
+
+javascript
+function preload() {
+    this.fontManager = new FontManager(this);
+    // Only load what this specific micro-game uses
+    this.fontManager.preload(['SPORT', 'DIALOG']);
+}
+
+function create() {
+    // Uses Jersey 10 at its native 10px
+    this.scoreText = this.fontManager.addText(16, 16, 'SPORT', 'SCORE: 000');
+
+    // Uses Silver at 12px, scaled up 2x (to 24px) for a title
+    this.title = this.fontManager.addText(400, 100, 'DIALOG', 'MY MICRO GAME', 2);
+    this.title.setOrigin(0.5);
+}
+Use code with caution.
+
+Why this works for templates:
+Asset Economy: You avoid loading all 20KB+ font files if the game only needs one.
+Consistency: If you decide to re-export Silver at 24px later, you only change it in the FontManager config once, not in every game file.
+Scale Control: It forces you to use the native size (8, 10, or 12) while using setScale for larger sizes, which is the best way to keep fonts sharp in Phaser. 

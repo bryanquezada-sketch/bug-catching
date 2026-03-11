@@ -1,0 +1,25 @@
+Most popular effects you can create using the setDisplayCallback method:
+Effect Name	        Property Modified	Logic Style	                    Best Use Case
+Wavy / Sine	        data.y	            Math.sin(time + index)	        Water levels, ghostly messages, or "Dreaming" text.
+Rainbow	            data.tint	        HSLToColor(hue, 1, 0.5)	        "New High Score," "Level Clear," or Invincibility power-ups.
+Shake / Jitter	    data.x, data.y	    Phaser.Math.Between(-2, 2)	    Screen shake, "Low Health" warnings, or explosions.
+Pulse / Breathing	data.scale	        1 + Math.sin(time) * 0.1	    "Press Start" prompts or "Boss Approaching" alerts.
+Typewriter Plus	    data.y	            if (index > visible) y + 500	Narrative dialogue where letters "pop" into place from below.
+Spinning	        data.rotation	    time + (index * 0.2)	        Chaotic effects, "Dizzy" status, or falling letters.
+Conveyor Belt	    data.x	            (x + time) % width	            Scrolling tickers, "News Flash" banners, or marquee signs.
+Flash / Blink	    data.tint	        if (time % 2) 0xff0000	        Critical alerts, "Time's Up" warnings, or low battery icons.
+
+Pro-Tip: Combining Effects
+Because the data object allows multiple changes at once, you can layer these. For example:
+Juicy Title: Combine Wavy + Rainbow + Pulse.
+Glitch Effect: Combine Shake + Flash (using a random color tint).
+
+Implementation Reminder
+To stop an effect from running constantly in your Vite template, simply set the callback to null:
+
+javascript
+// To stop the effect
+this.myText.setDisplayCallback(null);
+
+// To restart the effect
+this.myText.setDisplayCallback(this.myEffectFunction);

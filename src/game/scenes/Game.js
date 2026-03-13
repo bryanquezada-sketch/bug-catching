@@ -42,30 +42,8 @@ export class Game extends Scene
         this.netActive = false;
 
         this.input.keyboard.on('keydown-SPACE', (e) => {
-            if (this.netActive === false) {
-                this.netActive = true;
-                this.net.setFrame(1);
-
-                this.tweens.add({
-                    targets: this.net,
-                    angle: '+=145',
-                    duration: 100
-                });
-
-                this.time.delayedCall(250, () => {
-                    this.net.setFrame(0);
-                    this.tweens.add({
-                        targets: this.net,
-                        angle: '-=145',
-                        duration: 250
-                    });
-                });
-
-                this.time.delayedCall(500, () => {
-                    this.netActive = false;
-                });
-            }
-        })
+            this.netSwing();
+        });
 
         this.events.on('postupdate', () => {
             this.net.x = this.player.x;
@@ -76,8 +54,37 @@ export class Game extends Scene
         // --- END OF CREATE ---
     }
 
-    update()
+    netSwing()
     {
+        if (this.netActive === false) {
+            this.netActive = true;
+            this.net.setFrame(1);
+            
+            // Initial swing
+            this.tweens.add({
+                targets: this.net,
+                angle: '+=145',
+                duration: 100
+            });
+
+            // Return to starting position
+            this.time.delayedCall(250, () => {
+                this.net.setFrame(0);
+                this.tweens.add({
+                    targets: this.net,
+                    angle: '-=145',
+                    duration: 250
+                });
+            });
+
+            this.time.delayedCall(500, () => {
+                this.netActive = false;
+            });
+        }
+    }
+
+    update()
+    {   
         const playerSpeed = 160
         const leftDown = this.wasd.left.isDown || this.cursors.left.isDown;
         const rightDown = this.wasd.right.isDown || this.cursors.right.isDown;

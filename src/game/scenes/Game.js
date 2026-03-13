@@ -8,7 +8,8 @@ export class Game extends Scene
     }
 
     create ()
-    {        
+    {
+        this.facing = 1;        
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.scene.launch('UIScene');
         this.scene.bringToTop('UIScene');
@@ -57,8 +58,12 @@ export class Game extends Scene
 
             const netLength = this.net.displayHeight - 10;
 
-            this.netZone.x = this.net.x - 6;
-            this.netZone.y = this.net.y - netLength;
+            this.netZone.x = this.net.x - 16;
+            this.netZone.y = this.net.y;
+
+
+            this.netZone.y -= netLength;
+            this.netZone.x += (6 * this.facing);
 
             Phaser.Math.RotateAround(
                 this.netZone,
@@ -67,44 +72,68 @@ export class Game extends Scene
                 this.net.rotation
             );
 
-            this.netZone.body.setOffset(-8, -8); 
+            if (this.netZone.body) {
+                this.netZone.body.x = this.netZone.x - this.netZone.body.halfWidth;
+                this.netZone.body.y = this.netZone.y - this.netZone.body.halfHeight;
+            }
         });
-        
 
+        this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                console.log('Debugger: ', this.facing);
+            },
+            callbackScope: this,
+            loop: true
+        });
+
+        this.events.on('playerMoved', () => {
+            if (!this.netActive) {
+                const baseAngle = (this.facing === 1) ? -45 : 45;
+                this.net.setAngle(baseAngle);
+            }
+
+        });
+
+
+        this.isMoving = false;
+
+        
         // --- END OF CREATE ---
     }
 
     netSwing()
     {
-        if (this.netActive === false) {
-            this.netActive = true;
+        if (this.netActive) return;
+        
+        this.netActive = true;
+        this.netZone.body.enable = true;
+        this.net.setFrame(1);
+        
+        const swingAmount = 145 * this.facing;
 
-            this.netZone.body.enable = true;
-
-            this.net.setFrame(1);
-            
             // Initial swing
             this.tweens.add({
                 targets: this.net,
-                angle: '+=145',
-                duration: 100
-            });
+                angle: `+=${swingAmount}`,
+                duration: 100,
+                onComplete: () => {
+                    // Return to starting position
+                    this.time.delayedCall(150, () => {
+                        this.net.setFrame(0);
+                        this.tweens.add({
+                            targets: this.net,
+                            angle: `-=${swingAmount}`,
+                            duration: 250,
+                            onComplete: () => {
+                                this.netActive = false;
+                                this.netZone.body.enable = false;
 
-            // Return to starting position
-            this.time.delayedCall(250, () => {
-                this.net.setFrame(0);
-                this.tweens.add({
-                    targets: this.net,
-                    angle: '-=145',
-                    duration: 250
-                });
+                            }
+                        });
+                    });
+                }
             });
-
-            this.time.delayedCall(500, () => {
-                this.netActive = false;
-                this.netZone.body.enable = false;
-            });
-        }
     }
 
     update()
@@ -117,15 +146,19 @@ export class Game extends Scene
             this.stopBuffer = 0;
             if (this.lastXKey === 'left'){
                 this.player.setVelocityX(-playerSpeed);
+                this.facing = -1;
             } else {
                 this.player.setVelocityX(playerSpeed);
+                this.facing = 1;
             } 
         } else if (leftDown) {
             this.stopBuffer = 0;
             this.player.setVelocityX(-playerSpeed)
+            this.facing = -1;
         } else if (rightDown) {
             this.stopBuffer = 0;
             this.player.setVelocityX(playerSpeed);
+            this.facing = 1;
         } else {
             this.stopBuffer++;
             if (this.stopBuffer > 2) {
@@ -133,5 +166,20 @@ export class Game extends Scene
                 this.lastXKey = 'none';
             }
         }
+
+
+        const movingNow = Math.abs(this.player.body.velocity.x) > 1;
+
+        if (movingNow) {
+            this.events.emit('playerMoved');
+            this.isMoving = true;
+            console.log('ISMOVING')
+        } else {
+            this.isMoving = false;
+            console.log('STOPPED_MOVING')
+        }
+
+
+        // --- END OF UPDATE ---
     }
 }

@@ -45,10 +45,29 @@ export class Game extends Scene
             this.netSwing();
         });
 
-        this.events.on('postupdate', () => {
-            this.net.x = this.player.x;
-        });
+        this.netZone = this.add.zone(0, 0);
+        this.physics.add.existing(this.netZone);
+        this.netZone.body.setCircle(8);
+        this.netZone.body.setAllowGravity(false);
 
+        this.events.on('postupdate', () => { 
+            this.net.x = this.player.x;
+            this.net.y = this.player.y;
+
+            const netLength = this.net.displayHeight - 10;
+
+            this.netZone.x = this.net.x - 6;
+            this.netZone.y = this.net.y - netLength;
+
+            Phaser.Math.RotateAround(
+                this.netZone,
+                this.net.x,
+                this.net.y,
+                this.net.rotation
+            );
+
+            this.netZone.body.setOffset(-8, -8); 
+        });
         
 
         // --- END OF CREATE ---

@@ -49,12 +49,19 @@ export class Game extends Scene
                 this.tweens.add({
                     targets: this.net,
                     angle: '+=145',
-                    duration: 250
+                    duration: 100
                 });
-                
+
                 this.time.delayedCall(250, () => {
                     this.net.setFrame(0);
-                    this.net.setAngle(-45);
+                    this.tweens.add({
+                        targets: this.net,
+                        angle: '-=145',
+                        duration: 250
+                    });
+                });
+
+                this.time.delayedCall(500, () => {
                     this.netActive = false;
                 });
             }

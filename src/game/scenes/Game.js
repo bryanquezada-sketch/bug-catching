@@ -25,45 +25,7 @@ export class Game extends Scene
             left: Phaser.Input.Keyboard.KeyCodes.A,
             right: Phaser.Input.Keyboard.KeyCodes.D,
         });
-    }
 
-    update()
-    {
-        //#region Top-Down Controller with Sprint and cancel-logic for opposing arrow keys pressed. Remember to turn off gravity.
-        /*
-        const playerSpeed = 160;
-
-        let x = 0;
-        let y = 0
-
-        if (this.cursors.up.isDown || this.wasd.up.isDown ) {
-            y -= playerSpeed;
-        }
-        if (this.cursors.down.isDown || this.wasd.down.isDown ) {
-            y += playerSpeed;
-        }
-        if (this.cursors.left.isDown || this.wasd.left.isDown ) {
-            x -= playerSpeed;
-        }
-        if (this.cursors.right.isDown || this.wasd.right.isDown ) {
-            x += playerSpeed;
-        }
-
-        this.player.setVelocity(x, y);
-
-        if (x !== 0 || y !== 0) {
-            this.player.body.velocity.normalize().scale(playerSpeed);
-            if (this.cursors.shift.isDown) {
-                this.player.body.velocity.normalize().scale(playerSpeed * 1.5);
-            }
-        }
-        */
-        //#endregion
-
-        //#region Precise Movement 2D Controller with Last Button Pressed logic and Buffer for anti-fat-fingering. Only left and right directions and No Jump(Add that later Bryan)
-        /*
-
-        // --- vvv IMPORTANT, ADD THIS TO CREATE vvv ---
         this.stopBuffer = 0;
         this.lastXKey = 'none'
         this.input.keyboard.on('keydown', (e) => {
@@ -73,8 +35,42 @@ export class Game extends Scene
                 this.lastXKey = 'right';
             }
         });
-        // --- ^^^ IMPORTANT, ADD THIS TO CREATE ^^^ ---
 
+        this.net = this.physics.add.sprite(this.player.x, this.player.y, 'net');
+        this.net.setAngle(-45).setOrigin(0.5, 1);
+        this.net.body.allowGravity = false;
+        this.netActive = false;
+
+        this.input.keyboard.on('keydown-SPACE', (e) => {
+            if (this.netActive === false) {
+                this.netActive = true;
+                this.net.setFrame(1);
+
+                this.tweens.add({
+                    targets: this.net,
+                    angle: '+=145',
+                    duration: 250
+                });
+                
+                this.time.delayedCall(250, () => {
+                    this.net.setFrame(0);
+                    this.net.setAngle(-45);
+                    this.netActive = false;
+                });
+            }
+        })
+
+        this.events.on('postupdate', () => {
+            this.net.x = this.player.x;
+        });
+
+        
+
+        // --- END OF CREATE ---
+    }
+
+    update()
+    {
         const playerSpeed = 160
         const leftDown = this.wasd.left.isDown || this.cursors.left.isDown;
         const rightDown = this.wasd.right.isDown || this.cursors.right.isDown;
@@ -99,7 +95,5 @@ export class Game extends Scene
                 this.lastXKey = 'none';
             }
         }
-        */
-        //#endregion
     }
 }

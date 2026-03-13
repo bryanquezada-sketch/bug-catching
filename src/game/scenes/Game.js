@@ -49,6 +49,7 @@ export class Game extends Scene
         this.physics.add.existing(this.netZone);
         this.netZone.body.setCircle(8);
         this.netZone.body.setAllowGravity(false);
+        this.netZone.body.enable = false;
 
         this.events.on('postupdate', () => { 
             this.net.x = this.player.x;
@@ -77,6 +78,9 @@ export class Game extends Scene
     {
         if (this.netActive === false) {
             this.netActive = true;
+
+            this.netZone.body.enable = true;
+
             this.net.setFrame(1);
             
             // Initial swing
@@ -98,6 +102,7 @@ export class Game extends Scene
 
             this.time.delayedCall(500, () => {
                 this.netActive = false;
+                this.netZone.body.enable = false;
             });
         }
     }

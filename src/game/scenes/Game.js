@@ -70,14 +70,14 @@ export class Game extends Scene
     
         let startAngle = -45;
         let endAngle = 90;
-        const netLength = this.net.displayHeight - 10;
+        const netLength = this.net.displayHeight - 9;
         
         this.net.angle = startAngle;
     
         this.netTween = this.tweens.add({
             targets: this.net,
             angle: endAngle,
-            duration: 500, 
+            duration: 1000, 
             ease: 'Cubic.Out',
             onUpdate: () => {
                 const rad = Phaser.Math.DegToRad(this.net.angle - 90);

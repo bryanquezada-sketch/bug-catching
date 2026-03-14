@@ -43,7 +43,7 @@ export class Game extends Scene
         
         this.input.keyboard.on('keydown-SPACE', () => this.swingNet());
 
-        // === UNDER CONSTRUCTION ===
+        // --- NET --- 
 
         this.netContainer = this.add.container(this.player.x, this.player.y);
         this.net = this.add.sprite(0, 0, 'net');
@@ -58,7 +58,19 @@ export class Game extends Scene
         this.netZone.body.enable = false;
         this.netContainer.add(this.netZone);
 
+        // --- COLLECTIBLE ---
+
+        this.bug = this.physics.add.sprite(100, 115, '');
+        this.bug.setScale(0.5);
+        this.bug.body.setAllowGravity(false);
+
+        this.physics.add.overlap(this.bug, this.netZone, this.bugCapture, null, this);
+
         // --- END OF UPDATE ---
+    }
+
+    bugCapture(){
+        this.bug.destroy();
     }
 
     swingNet() {

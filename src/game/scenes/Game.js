@@ -9,7 +9,6 @@ export class Game extends Scene
 
     create ()
     {
-        this.facing = 1;        
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.scene.launch('UIScene');
         this.scene.bringToTop('UIScene');
@@ -19,6 +18,7 @@ export class Game extends Scene
         this.player.setCollideWorldBounds(true);
         Phaser.Display.Bounds.SetBottom(this.player, this.scale.height);
 
+        // --- Input ---
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = this.input.keyboard.addKeys ({
             up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -37,6 +37,12 @@ export class Game extends Scene
             }
         });
 
+        this.facing = 1;     
+        
+        this.input.keyboard.on('keydown-SPACE', () => this.swingNet());
+
+
+        // --- Net Visuals ---
         this.net = this.add.sprite(this.player.x, this.player.y, 'net');
         this.net.setOrigin(0.5, 1); // pivot at bottom of net
         this.net.setFrame(0);
@@ -46,12 +52,6 @@ export class Game extends Scene
         this.physics.add.existing(this.netZone);
         this.netZone.body.setAllowGravity(false);
         this.netZone.body.enable = false;
-
-        // --- Input ---
-        this.input.keyboard.on('keydown-SPACE', () => this.swingNet());
-
-        // --- Facing ---
-        this.facing = 1; // 1 = right, -1 = left
     }
 
     swingNet() {
@@ -60,20 +60,21 @@ export class Game extends Scene
             this.netTween = null;
         }
     
-        this.net.setFrame(1);           // active net frame
+        this.net.setFrame(1);
         this.netZone.body.enable = true;
     
-        // --- Start and end angles based on facing ---
         let startAngle, endAngle;
     
-        const swingArc = 135; // how much the net swings (degrees)
+        const swingArc = 135;
     
-        if (this.facing === 1) { // right
+        if (this.facing === 1) {
+            this.net.flipX = false;
             startAngle = -45;
-            endAngle = startAngle + swingArc; // clockwise swing
-        } else { // left
-            startAngle = -180 + 45;           // mirror of -45
-            endAngle = startAngle - swingArc; // counter-clockwise swing
+            endAngle = startAngle + swingArc;
+        } else {
+            this.net.flipX = true;
+            startAngle = -315;
+            endAngle = startAngle - swingArc;
         }
     
         this.net.angle = startAngle;

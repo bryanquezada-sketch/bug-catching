@@ -51,8 +51,9 @@ export class Game extends Scene
         this.net.setAngle(-45);
         this.netContainer.add(this.net);
 
-        this.netZone = this.add.zone(-8, -this.net.displayHeight + 10, 16, 16);
+        this.netZone = this.add.zone(-8, -this.net.displayHeight + 10, 24, 24);
         this.physics.add.existing(this.netZone);
+        this.netZone.body.setCircle(12)
         this.netZone.body.setAllowGravity(false);
         this.netZone.body.enable = false;
         this.netContainer.add(this.netZone);
@@ -70,14 +71,14 @@ export class Game extends Scene
     
         let startAngle = -45;
         let endAngle = 90;
-        const netLength = this.net.displayHeight - 9;
+        const netLength = this.net.displayHeight - 10;
         
         this.net.angle = startAngle;
     
         this.netTween = this.tweens.add({
             targets: this.net,
             angle: endAngle,
-            duration: 1000, 
+            duration: 300, 
             ease: 'Cubic.Out',
             onUpdate: () => {
                 const rad = Phaser.Math.DegToRad(this.net.angle - 90);

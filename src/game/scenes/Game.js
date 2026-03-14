@@ -37,85 +37,91 @@ export class Game extends Scene
             }
         });
 
-        this.net = this.physics.add.sprite(this.player.x, this.player.y, 'net');
-        this.net.setAngle(-45).setOrigin(0.5, 0.9);
-        this.net.body.allowGravity = false;
-        this.netSwinging = false;
-        this.netTween = null;
+        this.net = this.add.sprite(this.player.x, this.player.y, 'net');
+        this.net.setOrigin(0.5, 1); // pivot at bottom of net
+        this.net.setFrame(0);
 
-        this.input.keyboard.on('keydown-SPACE', (e) => {
-            this.netSwing();
-        });
-
-        this.netZone = this.add.zone(0, 0);
+        // --- Zone for hit detection ---
+        this.netZone = this.add.zone(this.net.x, this.net.y, 16, 16);
         this.physics.add.existing(this.netZone);
-        this.netZone.body.setCircle(8);
         this.netZone.body.setAllowGravity(false);
         this.netZone.body.enable = false;
 
-        // --- END OF CREATE ---
+        // --- Input ---
+        this.input.keyboard.on('keydown-SPACE', () => this.swingNet());
+
+        // --- Facing ---
+        this.facing = 1; // 1 = right, -1 = left
     }
 
-    netSwing()
-    {
-       if (this.netTween) {
-        this.netTween.stop();
-       }
-
-       this.netActive = true;
-
-       const startAngle = this.facing === 1 ? -45 : 255;
-       const endAngle = this.facing === 1 ? 90 : 90;
-
-       this.net.setAngle(startAngle);
-       this.net.setFrame(1);
-
-       this.netZone.body.enable = true;
-
-       this.netTween = this.tweens.add({
-        targets: this.net,
-        angle: endAngle,
-        duration: 180,
-        ease: "Cubic.Out",
-        onComplete: () => {
-            this.netZone.body.enable = false;
-            this.resetNet();
+    swingNet() {
+        if (this.netTween) {
+            this.netTween.stop();
+            this.netTween = null;
         }
-       });
-    }
-
-    resetNet()
-    {
-        const idleAngle = this.facing === 1 ? -45 : 225;
-
-        this.net.setFrame(0);
-
-        this.tweens.add({
-            targets: this.net,
-            angle: idleAngle,
-            duration: 120,
-            ease: "Cubic.Out",
+    
+        this.net.setFrame(1);           // active net frame
+        this.netZone.body.enable = true;
+    
+        // --- Start and end angles based on facing ---
+        let startAngle, endAngle;
+    
+        const swingArc = 135; // how much the net swings (degrees)
+    
+        if (this.facing === 1) { // right
+            startAngle = -45;
+            endAngle = startAngle + swingArc; // clockwise swing
+        } else { // left
+            startAngle = -180 + 45;           // mirror of -45
+            endAngle = startAngle - swingArc; // counter-clockwise swing
+        }
+    
+        this.net.angle = startAngle;
+    
+        const swing = { t: 0 };
+    
+        this.netTween = this.tweens.add({
+            targets: swing,
+            t: 1,
+            duration: 500,
+            ease: 'Cubic.Out',
+    
+            onUpdate: () => {
+                // Interpolate between start and end angles
+                this.net.angle = Phaser.Math.Interpolation.Linear([startAngle, endAngle], swing.t);
+    
+                // Update zone at net tip
+                this.updateNetZone();
+            },
+    
             onComplete: () => {
-                this.netActive = false;
+                this.netZone.body.enable = false;
+                this.net.setFrame(0); // back to idle
             }
         });
     }
 
-    updateNetZone()
-    {
+    updateNetZone() {
         if (!this.netZone.body.enable) return;
 
-        const length = 48;
-        const angle = Phaser.Math.DegToRad(this.net.angle);
+        // --- tip coordinates relative to pivot ---
+        const tipX = -8;
+        const tipY = -this.net.displayHeight + 10;
 
-        const x = this.net.x + Math.cos(angle) * length;
-        const y = this.net.y + Math.sin(angle) * length;
+        // mirror X if facing left
+        const localX = this.facing === 1 ? tipX : -tipX;
+        const localY = tipY;
 
-        this.netZone.setPosition(x, y);
+        // rotate by net angle
+        const rad = Phaser.Math.DegToRad(this.net.angle);
+        const rotatedX = localX * Math.cos(rad) - localY * Math.sin(rad);
+        const rotatedY = localX * Math.sin(rad) + localY * Math.cos(rad);
+
+        // set world position
+        this.netZone.setPosition(this.net.x + rotatedX, this.net.y + rotatedY);
     }
 
-    update()
-    {   
+    update() {
         const playerSpeed = 160
         const leftDown = this.wasd.left.isDown || this.cursors.left.isDown;
         const rightDown = this.wasd.right.isDown || this.cursors.right.isDown;
@@ -144,19 +150,8 @@ export class Game extends Scene
                 this.lastXKey = 'none';
             }
         }
-
-        const netOffsetX = 12 * this.facing;
-        const netOffsetY = -6;
-
-        this.net.setPosition(
-            this.player.x + netOffsetX,
-            this.player.y + netOffsetY
-        );
-
-        this.net.setFlipX(this.facing === -1);
-
-        this.updateNetZone();
-
-        // --- END OF UPDATE ---
+        
+        this.net.x = this.player.x;
+        this.net.y = this.player.y;
     }
 }

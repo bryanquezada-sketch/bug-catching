@@ -40,7 +40,8 @@ export class Game extends Scene
         this.net = this.physics.add.sprite(this.player.x, this.player.y, 'net');
         this.net.setAngle(-45).setOrigin(0.5, 0.9);
         this.net.body.allowGravity = false;
-        this.netActive = false;
+        this.netSwinging = false;
+        this.netTween = null;
 
         this.input.keyboard.on('keydown-SPACE', (e) => {
             this.netSwing();
@@ -57,7 +58,60 @@ export class Game extends Scene
 
     netSwing()
     {
-       
+       if (this.netTween) {
+        this.netTween.stop();
+       }
+
+       this.netActive = true;
+
+       const startAngle = this.facing === 1 ? -45 : 255;
+       const endAngle = this.facing === 1 ? 90 : 90;
+
+       this.net.setAngle(startAngle);
+       this.net.setFrame(1);
+
+       this.netZone.body.enable = true;
+
+       this.netTween = this.tweens.add({
+        targets: this.net,
+        angle: endAngle,
+        duration: 180,
+        ease: "Cubic.Out",
+        onComplete: () => {
+            this.netZone.body.enable = false;
+            this.resetNet();
+        }
+       });
+    }
+
+    resetNet()
+    {
+        const idleAngle = this.facing === 1 ? -45 : 225;
+
+        this.net.setFrame(0);
+
+        this.tweens.add({
+            targets: this.net,
+            angle: idleAngle,
+            duration: 120,
+            ease: "Cubic.Out",
+            onComplete: () => {
+                this.netActive = false;
+            }
+        });
+    }
+
+    updateNetZone()
+    {
+        if (!this.netZone.body.enable) return;
+
+        const length = 48;
+        const angle = Phaser.Math.DegToRad(this.net.angle);
+
+        const x = this.net.x + Math.cos(angle) * length;
+        const y = this.net.y + Math.sin(angle) * length;
+
+        this.netZone.setPosition(x, y);
     }
 
     update()
@@ -90,6 +144,18 @@ export class Game extends Scene
                 this.lastXKey = 'none';
             }
         }
+
+        const netOffsetX = 12 * this.facing;
+        const netOffsetY = -6;
+
+        this.net.setPosition(
+            this.player.x + netOffsetX,
+            this.player.y + netOffsetY
+        );
+
+        this.net.setFlipX(this.facing === -1);
+
+        this.updateNetZone();
 
         // --- END OF UPDATE ---
     }

@@ -9,11 +9,13 @@ export class Game extends Scene
 
     create ()
     {
+        // --- Camera and UI ---
         this.cameras.main.fadeIn(500, 0, 0, 0);
+        this.cameras.main.setBackgroundColor(0x141414);
         this.scene.launch('UIScene');
         this.scene.bringToTop('UIScene');
-        this.cameras.main.setBackgroundColor(0x141414);
 
+        // --- Player ---
         this.player = this.physics.add.sprite(this.scale.width / 2, this.scale.height / 2, 'player');
         this.player.setCollideWorldBounds(true);
         Phaser.Display.Bounds.SetBottom(this.player, this.scale.height);
@@ -37,15 +39,16 @@ export class Game extends Scene
             }
         });
 
-        this.facing = 1;     
+        this.facing = 1;
         
         this.input.keyboard.on('keydown-SPACE', () => this.swingNet());
 
 
         // --- Net Visuals ---
         this.net = this.add.sprite(this.player.x, this.player.y, 'net');
-        this.net.setOrigin(0.5, 1); // pivot at bottom of net
+        this.net.setOrigin(0.5, 1);
         this.net.setFrame(0);
+        this.net.setAngle(-45);
 
         // --- Zone for hit detection ---
         this.netZone = this.add.zone(this.net.x, this.net.y, 16, 16);
@@ -100,6 +103,10 @@ export class Game extends Scene
                 this.net.setFrame(0); // back to idle
             }
         });
+    }
+
+    resetNet(){
+
     }
 
     updateNetZone() {

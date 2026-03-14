@@ -43,90 +43,58 @@ export class Game extends Scene
         
         this.input.keyboard.on('keydown-SPACE', () => this.swingNet());
 
+        // === UNDER CONSTRUCTION ===
 
-        // --- Net Visuals ---
-        this.net = this.add.sprite(this.player.x, this.player.y, 'net');
+        this.netContainer = this.add.container(this.player.x, this.player.y);
+        this.net = this.add.sprite(0, 0, 'net');
         this.net.setOrigin(0.5, 1);
-        this.net.setFrame(0);
         this.net.setAngle(-45);
+        this.netContainer.add(this.net);
 
-        // --- Zone for hit detection ---
-        this.netZone = this.add.zone(this.net.x, this.net.y, 16, 16);
+        this.netZone = this.add.zone(-8, -this.net.displayHeight + 10, 16, 16);
         this.physics.add.existing(this.netZone);
         this.netZone.body.setAllowGravity(false);
         this.netZone.body.enable = false;
+        this.netContainer.add(this.netZone);
+
+        // --- END OF UPDATE ---
     }
 
     swingNet() {
-        if (this.netTween) {
-            this.netTween.stop();
-            this.netTween = null;
-        }
-    
-        this.net.setFrame(1);
+        this.netIsActive = true;
         this.netZone.body.enable = true;
+        this.net.setFrame(1);
+        this.netContainer.scaleX = this.facing;
+        this.tweens.killTweensOf(this.net);
+        this.net.setAngle(-45);
     
-        let startAngle, endAngle;
-    
-        const swingArc = 135;
-    
-        if (this.facing === 1) {
-            this.net.flipX = false;
-            startAngle = -45;
-            endAngle = startAngle + swingArc;
-        } else {
-            this.net.flipX = true;
-            startAngle = -315;
-            endAngle = startAngle - swingArc;
-        }
-    
+        let startAngle = -45;
+        let endAngle = 90;
+        const netLength = this.net.displayHeight - 10;
+        
         this.net.angle = startAngle;
     
-        const swing = { t: 0 };
-    
         this.netTween = this.tweens.add({
-            targets: swing,
-            t: 1,
-            duration: 500,
+            targets: this.net,
+            angle: endAngle,
+            duration: 500, 
             ease: 'Cubic.Out',
-    
             onUpdate: () => {
-                // Interpolate between start and end angles
-                this.net.angle = Phaser.Math.Interpolation.Linear([startAngle, endAngle], swing.t);
+                const rad = Phaser.Math.DegToRad(this.net.angle - 90);
     
-                // Update zone at net tip
-                this.updateNetZone();
+                this.netZone.x = Math.cos(rad) * netLength;
+                this.netZone.y = Math.sin(rad) * netLength;
+                
+                this.netZone.body.updateFromGameObject();
             },
-    
             onComplete: () => {
+                this.net.angle = startAngle;
+                this.net.setFrame(0);
                 this.netZone.body.enable = false;
-                this.net.setFrame(0); // back to idle
+                this.netIsActive = false;
+                this.netZone.setPosition(-8, -this.net.displayHeight + 10);
             }
         });
-    }
-
-    resetNet(){
-
-    }
-
-    updateNetZone() {
-        if (!this.netZone.body.enable) return;
-
-        // --- tip coordinates relative to pivot ---
-        const tipX = -8;
-        const tipY = -this.net.displayHeight + 10;
-
-        // mirror X if facing left
-        const localX = this.facing === 1 ? tipX : -tipX;
-        const localY = tipY;
-
-        // rotate by net angle
-        const rad = Phaser.Math.DegToRad(this.net.angle);
-        const rotatedX = localX * Math.cos(rad) - localY * Math.sin(rad);
-        const rotatedY = localX * Math.sin(rad) + localY * Math.cos(rad);
-
-        // set world position
-        this.netZone.setPosition(this.net.x + rotatedX, this.net.y + rotatedY);
     }
 
     update() {
@@ -159,7 +127,10 @@ export class Game extends Scene
             }
         }
         
-        this.net.x = this.player.x;
-        this.net.y = this.player.y;
+        this.netContainer.setPosition(this.player.x, this.player.y);
+
+        if (!this.netIsActive) {
+            this.netContainer.scaleX = this.facing;
+        }
     }
 }

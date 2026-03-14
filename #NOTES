@@ -1,0 +1,479 @@
+Skip to main contentAccessibility help
+Accessibility feedback
+Pi Day 2026
+AI Mode
+All
+Short videos
+Videos
+Images
+More
+Sign in
+
+
+phaser 3.90.0 how to kill tweens
+In Phaser 3.90.0, the most efficient ways to "kill" or stop tweens are to target specific objects, use the Tween Manager, or call methods directly on a tween instance.
+1. Kill All Tweens for a Specific Object 
+If you want to stop every tween currently affecting a specific Game Object (like a sprite), use killTweensOf. This is the cleanest way to ensure an object stops moving before you destroy it or start a new animation. 
+Phaser Docs
+Phaser Docs
+ +1
+javascript
+// Stops and removes all tweens targeting 'mySprite'
+this.tweens.killTweensOf(mySprite);
+
+// You can also pass an array of targets
+this.tweens.killTweensOf([enemy1, enemy2, enemy3]);
+Use code with caution.
+
+2. Kill a Specific Tween Instance
+If you have a reference to a specific tween, you can stop it directly.
+stop(): Immediately halts the tween. It flags the tween for removal by the Tween Manager, meaning it will be cleaned up in the next frame.
+remove(): Immediately removes the tween from the manager's internal arrays and sets its state to REMOVED.
+destroy(): Completely clears out the tween data and resets targets. A destroyed tween cannot be reused or played again. 
+Phaser Docs
+Phaser Docs
+ +2
+javascript
+const myTween = this.tweens.add({ /* ... */ });
+
+// Stop it later
+myTween.stop(); 
+// OR
+myTween.destroy();
+Use code with caution.
+
+3. Global Tween Management
+To clear multiple tweens at once through the TweenManager: 
+this.tweens.killAll(): Stops and removes every active tween in the current scene.
+this.tweens.pauseAll() / this.tweens.resumeAll(): Use these if you only need to temporary halt movement without "killing" the tweens entirely. 
+Quick Comparison of Methods
+Method 	Effect	Best Use Case
+killTweensOf(target)	Stops all tweens for a specific object.	Before destroying a sprite or changing its state.
+tween.stop()	Halts a specific tween; flags for cleanup.	Standard way to end a single animation early.
+tween.destroy()	Immediate data wipe of the tween.	When you are certain the tween is no longer needed.
+tweens.killAll()	Stops every tween in the scene.	Resetting a level or switching game states.
+Note: By default, Phaser tweens automatically destroy themselves once they finish playing unless you have set persist: true in the tween configuration. 
+Phaser Docs
+Phaser Docs
+ +1
+
+
+
+
+
+undefined
+undefined
+undefined
+10 sites
+TweenManager | Phaser Help
+Once the chain has finished playing, or repeating if set, all tweens in the chain will be destroyed automatically. To override thi...
+
+Phaser Docs
+Tweens | Phaser Help
+Destroy task of a target​ scene. tweens. killTweensOf(target); target : The target to kill the tweens of. Provide an array to use ...
+
+Phaser Docs
+Tween | Phaser Help
+Source: src/tweens/tween/Tween.js#L205. destroy​ destroy()​ Description: Handles the destroy process of this Tween, clearing out t...
+
+Phaser Docs
+Show all
+This activates when I press SPACEBAR. Will it work? 
+
+    swingNet() {
+        this.netIsActive = true;
+        this.netZone.body.enable = true;
+        this.net.setFrame(1);
+        this.netContainer.scaleX = this.facing;
+        this.tweens.killTweensOf(this.netTween);
+        this.net.setAngle(-45);
+    
+        let startAngle = -45;
+        let endAngle = 90;
+    
+        this.net.angle = startAngle;
+    
+        this.netTween = this.tweens.add({
+            targets: this.net,
+            angle: endAngle,
+            duration: 500,
+            ease: 'Cubic.Out',
+            yoyo: true,
+            onUpdate: () => {
+                this.netZone.body.updateFromGameObject();
+            },
+            onComplete: () => {
+                this.net.setFrame(0);
+                this.netZone.body.enable = false;
+                this.netIsActive = false;
+            }
+        });
+    }
+It will "work" in the sense that it will run, but there is one specific logic error in how you are using killTweensOf that will likely cause your net to get stuck or behave strangely if you mash the SPACEBAR.
+The Problem: killTweensOf(this.netTween)
+The killTweensOf method expects a Target (the Game Object being tweened), but you are passing it the Tween Instance itself.
+Current behavior: Because this.netTween isn't the target of the tween (the target is this.net), killTweensOf will likely fail to find and stop the previous animation.
+The Result: If you press SPACEBAR while a swing is already happening, you will have two (or more) tweens fighting to control this.net.angle at the same time, causing flickering.
+The Fix
+Change the kill line to target the object, or stop the tween instance directly:
+javascript
+// Option A: Target the object (Safest)
+this.tweens.killTweensOf(this.net); 
+
+// Option B: Stop the specific instance if it exists
+if (this.netTween) {
+    this.netTween.stop();
+}
+Use code with caution.
+
+One more "gotcha": The onComplete vs yoyo
+Since you have yoyo: true, the onComplete callback only fires after the yoyo finishes (the net returns to the start).
+If you want the netZone to disable as soon as the net reaches the furthest point of the swing (90 degrees) but before it swings back, you should use onYoyo instead of onComplete.
+Improved Version
+javascript
+swingNet() {
+    this.netIsActive = true;
+    this.netZone.body.enable = true;
+    this.net.setFrame(1);
+    this.netContainer.scaleX = this.facing;
+
+    // Correctly stop any existing swing on this object
+    this.tweens.killTweensOf(this.net);
+    
+    this.net.angle = -45; // Reset starting position
+
+    this.netTween = this.tweens.add({
+        targets: this.net,
+        angle: 90,
+        duration: 500,
+        ease: 'Cubic.Out',
+        yoyo: true,
+        onUpdate: () => {
+            this.netZone.body.updateFromGameObject();
+        },
+        onComplete: () => {
+            // Fires ONLY after the swing returns to -45
+            this.net.setFrame(0);
+            this.netZone.body.enable = false;
+            this.netIsActive = false;
+        }
+    });
+}
+Use code with caution.
+
+Do you want the hitbox (netZone) to stay active for the entire duration of the yoyo, or should it turn off the moment the net hits the 90-degree mark?
+
+
+
+
+Is there a way I can set a yoyo to be instant? I want to remove that animation now but I still need it to head back to it's proper position. Or would just manually changing the angle back onComplete be better?
+If you want the "return" to be instant, you should remove yoyo: true and handle the reset in onComplete.
+Using yoyo: true with a 0ms duration is technically possible via hold or repeatDelay, but it's messy and harder to debug. Manually resetting the angle is the standard "clean" way to do this in Phaser.
+The Recommended Approach
+Remove yoyo and reset the angle inside onComplete. This gives you total control over the object's state the moment the swing finishes.
+javascript
+swingNet() {
+    this.netIsActive = true;
+    this.netZone.body.enable = true;
+    this.net.setFrame(1);
+    this.netContainer.scaleX = this.facing;
+
+    // Stop previous tweens on the net object
+    this.tweens.killTweensOf(this.net);
+    
+    // Set starting position
+    this.net.angle = -45;
+
+    this.netTween = this.tweens.add({
+        targets: this.net,
+        angle: 90,
+        duration: 250, // Shortened since it's only one way now
+        ease: 'Cubic.Out',
+        onUpdate: () => {
+            this.netZone.body.updateFromGameObject();
+        },
+        onComplete: () => {
+            // INSTANT RESET
+            this.net.angle = -45; 
+            this.net.setFrame(0);
+            this.netZone.body.enable = false;
+            this.netIsActive = false;
+        }
+    });
+}
+Use code with caution.
+
+Why this is better than "Instant Yoyo":
+State Management: You are 100% sure the netIsActive flag and netZone disable at the exact same millisecond the angle resets.
+Performance: Phaser doesn't have to calculate a second "return" tween path.
+Predictability: If you press SPACEBAR again rapidly, killTweensOf stops the forward swing, and the new call immediately resets the angle to -45 before starting the next one.
+Pro-Tip: The "Cooldown"
+If you find that "mashing" the SPACEBAR looks glitchy because the net keeps teleporting back to -45 mid-swing, you can wrap the whole function in a check:
+javascript
+swingNet() {
+    if (this.netIsActive) return; // Don't start a new swing if one is happening
+    // ... rest of your code
+}
+Use code with caution.
+
+Do you want the player to be able to interrupt the current swing with a new one, or should they have to wait for the first swing to finish?
+
+
+
+
+No, in this case it's going to be very action-y. Like a sword swing you can spam. Thinking about adding a cool down though. Anyway, I changed a few things to that end(of making it more action-y). The zone isn't following the net's head anymore, help me figure that out.
+
+import { Scene } from 'phaser';
+
+export class Game extends Scene
+{
+    constructor ()
+    {
+        super('Game');
+    }
+
+    create ()
+    {
+        // --- Camera and UI ---
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+        this.cameras.main.setBackgroundColor(0x141414);
+        this.scene.launch('UIScene');
+        this.scene.bringToTop('UIScene');
+
+        // --- Player ---
+        this.player = this.physics.add.sprite(this.scale.width / 2, this.scale.height / 2, 'player');
+        this.player.setCollideWorldBounds(true);
+        Phaser.Display.Bounds.SetBottom(this.player, this.scale.height);
+
+        // --- Input ---
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.wasd = this.input.keyboard.addKeys ({
+            up: Phaser.Input.Keyboard.KeyCodes.W,
+            down: Phaser.Input.Keyboard.KeyCodes.S,
+            left: Phaser.Input.Keyboard.KeyCodes.A,
+            right: Phaser.Input.Keyboard.KeyCodes.D,
+        });
+
+        this.stopBuffer = 0;
+        this.lastXKey = 'none'
+        this.input.keyboard.on('keydown', (e) => {
+            if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+                this.lastXKey = 'left';
+            } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+                this.lastXKey = 'right';
+            }
+        });
+
+        this.facing = 1;
+        
+        this.input.keyboard.on('keydown-SPACE', () => this.swingNet());
+
+        // === UNDER CONSTRUCTION ===
+
+        this.netContainer = this.add.container(this.player.x, this.player.y);
+        this.net = this.add.sprite(0, 0, 'net');
+        this.net.setOrigin(0.5, 1);
+        this.net.setAngle(-45);
+        this.netContainer.add(this.net);
+
+        this.netZone = this.add.zone(-8, -this.net.displayHeight + 10, 16, 16);
+        this.physics.add.existing(this.netZone);
+        this.netZone.body.setAllowGravity(false);
+        this.netZone.body.enable = false;
+        this.netContainer.add(this.netZone);
+
+        // --- END OF UPDATE ---
+    }
+
+    swingNet() {
+        this.netIsActive = true;
+        this.netZone.body.enable = true;
+        this.net.setFrame(1);
+        this.netContainer.scaleX = this.facing;
+        this.tweens.killTweensOf(this.net);
+        this.net.setAngle(-45);
+    
+        let startAngle = -45;
+        let endAngle = 90;
+    
+        this.net.angle = startAngle;
+    
+        this.netTween = this.tweens.add({
+            targets: this.net,
+            angle: endAngle,
+            duration: 500,
+            ease: 'Cubic.Out',
+            onUpdate: () => {
+                this.netZone.body.updateFromGameObject();
+            },
+            onComplete: () => {
+                this.net.angle = -45;
+                this.net.setFrame(0);
+                this.netZone.body.enable = false;
+                this.netIsActive = false;
+            }
+        });
+    }
+
+    update() {
+        const playerSpeed = 160
+        const leftDown = this.wasd.left.isDown || this.cursors.left.isDown;
+        const rightDown = this.wasd.right.isDown || this.cursors.right.isDown;
+
+        if (leftDown && rightDown) {
+            this.stopBuffer = 0;
+            if (this.lastXKey === 'left'){
+                this.player.setVelocityX(-playerSpeed);
+                this.facing = -1;
+            } else {
+                this.player.setVelocityX(playerSpeed);
+                this.facing = 1;
+            } 
+        } else if (leftDown) {
+            this.stopBuffer = 0;
+            this.player.setVelocityX(-playerSpeed)
+            this.facing = -1;
+        } else if (rightDown) {
+            this.stopBuffer = 0;
+            this.player.setVelocityX(playerSpeed);
+            this.facing = 1;
+        } else {
+            this.stopBuffer++;
+            if (this.stopBuffer > 2) {
+                this.player.setVelocityX(0);
+                this.lastXKey = 'none';
+            }
+        }
+        
+        this.netContainer.setPosition(this.player.x, this.player.y);
+
+        if (!this.netIsActive) {
+            this.netContainer.scaleX = this.facing;
+        }
+    }
+}
+The reason the netZone isn't following the "head" of the net anymore is that Zones (and their physics bodies) don't automatically rotate with their parent containers or follow the internal rotation of other sprites inside that container.
+When you rotate this.net, you are rotating its local coordinate system, but the netZone stays stuck at its initial local (x, y) relative to the container.
+To fix this, you need to calculate the "tip" of the net using sine and cosine based on the current angle during the onUpdate loop.
+The Fix
+Replace your swingNet method with this logic:
+javascript
+swingNet() {
+    this.netIsActive = true;
+    this.netZone.body.enable = true;
+    this.net.setFrame(1);
+    
+    // Lock facing direction at start of swing
+    this.netContainer.scaleX = this.facing;
+    
+    this.tweens.killTweensOf(this.net);
+    
+    const startAngle = -45;
+    const endAngle = 90;
+    const netLength = this.net.displayHeight - 10; // Distance to the 'head'
+
+    this.net.angle = startAngle;
+
+    this.netTween = this.tweens.add({
+        targets: this.net,
+        angle: endAngle,
+        duration: 200, // Faster for that "action-y" feel
+        ease: 'Cubic.Out',
+        onUpdate: () => {
+            // 1. Convert degrees to radians (Phaser angles are offset by 90 deg for math)
+            // We subtract 90 because 0 degrees in Math is 'Right', but 0 in Phaser is 'Up'
+            const rad = Phaser.Math.DegToRad(this.net.angle - 90);
+
+            // 2. Position the zone relative to the net's pivot point
+            this.netZone.x = Math.cos(rad) * netLength;
+            this.netZone.y = Math.sin(rad) * netLength;
+
+            // 3. Sync the physics body to the new Zone position
+            this.netZone.body.updateFromGameObject();
+        },
+        onComplete: () => {
+            this.net.angle = startAngle;
+            this.net.setFrame(0);
+            this.netZone.body.enable = false;
+            this.netIsActive = false;
+            
+            // Reset zone position to default
+            this.netZone.setPosition(-8, -this.net.displayHeight + 10);
+        }
+    });
+}
+Use code with caution.
+
+Why this works:
+Trigonometry: Since your net's origin is (0.5, 1) (the bottom), it's basically a pendulum. Math.cos and Math.sin find the x and y coordinates of the far end of that pendulum as it swings.
+Manual Sync: updateFromGameObject() tells the Arcade Physics engine, "Hey, I moved the Zone manually, please move the hitbox to match."
+Quick Tip for "Spamming"
+Since you want it to feel action-oriented, I lowered the duration to 200ms. A 500ms swing feels very heavy/slow for a game where you mash the SPACEBAR.
+Should the hitbox be a circle instead of a square to make the "sweet spot" of the net more forgiving during the arc?
+
+
+
+
+Yeah I just set it to 500ms temporarily so I can visually watch the hitbox to make sure everything is working. I thought about making it a circle. It might actually fix the current issue now:
+
+The square is sticking halfway out of the net's head. Was this by design? To make it easier for the players to capture things?
+That's a classic "game feel" trick! Making hitboxes slightly larger than the visual art is standard practice to make the game feel responsive and fair to the player.
+However, the reason it looks "halfway out" right now is likely due to how Origins and Arcade Physics interact.
+Why it's sticking out:
+By default, a Zone has an origin of 0.5, 0.5 (the center), but an Arcade Physics Body typically offsets from the top-left. When you move the Zone via code, the body tries to center itself on that point, but the alignment can look off if the math doesn't account for the body's own width/height.
+Switching to a Circle (The "Pro" Move)
+Switching to a circle is much better for a "swinging" motion because it doesn't matter what angle the net is at—a circle is always the same shape.
+1. Change the Zone to a Circle in create:
+javascript
+// Make it a bit larger than the net head for "forgiveness"
+this.netZone = this.add.zone(0, 0, 32, 32); 
+this.physics.add.existing(this.netZone);
+this.netZone.body.setCircle(16); // Half of the width/height
+this.netZone.body.setAllowGravity(false);
+this.netZone.body.enable = false;
+this.netContainer.add(this.netZone);
+Use code with caution.
+
+2. Update the onUpdate math:
+In your tween, you just need to make sure the math targets the center of the net's head.
+javascript
+onUpdate: () => {
+    // Offset by -90 because Phaser's 0 degrees is "Up" 
+    // but Math.cos/sin 0 degrees is "Right"
+    const rad = Phaser.Math.DegToRad(this.net.angle - 90);
+    
+    // Calculate the tip of the net
+    const netLength = this.net.displayHeight - 8; 
+
+    // Position the zone's center at the tip
+    this.netZone.x = Math.cos(rad) * netLength;
+    this.netZone.y = Math.sin(rad) * netLength;
+
+    // This is the crucial part for circles!
+    this.netZone.body.updateFromGameObject();
+}
+Use code with caution.
+
+How to see it clearly
+To make sure you aren't guessing, turn on physics debug in your game config if you haven't already:
+javascript
+physics: {
+    default: 'arcade',
+    arcade: {
+        debug: true
+    }
+}
+Use code with caution.
+
+This will draw a purple/green circle exactly where the hit detection is happening. If it's still "halfway out," you just need to tweak that netLength number (e.g., change -8 to -12) to pull it closer to the handle.
+Do you want to see how to debug draw just this one specific hitbox so the rest of the game stays clean?
+
+
+You can now share this thread with others
+
+
+
+Ask anything
+
+
+AI Mode response is readyAsk about 

@@ -52,12 +52,87 @@ export class Game extends Scene
         this.netZone.body.setAllowGravity(false);
         this.netZone.body.enable = false;
 
+        this.events.on('postupdate', () => { 
+            this.net.x = this.player.x;
+            this.net.y = this.player.y;
+
+            const netLength = this.net.displayHeight - 10;
+
+            this.netZone.x = this.net.x - 16;
+            this.netZone.y = this.net.y;
+
+            this.netZone.x += (3 * this.facing);
+            this.netZone.y -= netLength;
+
+            Phaser.Math.RotateAround(
+                this.netZone,
+                this.net.x,
+                this.net.y,
+                this.net.rotation
+            );
+
+            if (this.netZone.body) {
+                this.netZone.body.x = this.netZone.x - this.netZone.body.halfWidth;
+                this.netZone.body.y = this.netZone.y - this.netZone.body.halfHeight;
+            }
+        });
+
+        this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                console.log('Debugger: ', this.facing);
+            },
+            callbackScope: this,
+            loop: true
+        });
+
+        this.events.on('playerMoved', () => {
+            if (!this.netActive) {
+                const baseAngle = (this.facing === 1) ? -45 : 45;
+                this.net.setAngle(baseAngle);
+            }
+
+        });
+
+
+        this.isMoving = false;
+
+        
         // --- END OF CREATE ---
     }
 
     netSwing()
     {
-       
+        if (this.netActive) return;
+        
+        this.netActive = true;
+        this.netZone.body.enable = true;
+        this.net.setFrame(1);
+        
+        const swingAmount = 145 * this.facing;
+
+            // Initial swing
+            this.tweens.add({
+                targets: this.net,
+                angle: `+=${swingAmount}`,
+                duration: 1000,
+                onComplete: () => {
+                    // Return to starting position
+                    this.time.delayedCall(150, () => {
+                        this.net.setFrame(0);
+                        this.tweens.add({
+                            targets: this.net,
+                            angle: `-=${swingAmount}`,
+                            duration: 250,
+                            onComplete: () => {
+                                this.netActive = false;
+                                this.netZone.body.enable = false;
+
+                            }
+                        });
+                    });
+                }
+            });
     }
 
     update()
@@ -90,6 +165,19 @@ export class Game extends Scene
                 this.lastXKey = 'none';
             }
         }
+
+
+        const movingNow = Math.abs(this.player.body.velocity.x) > 1;
+
+        if (movingNow) {
+            this.events.emit('playerMoved');
+            this.isMoving = true;
+            console.log('ISMOVING')
+        } else {
+            this.isMoving = false;
+            console.log('STOPPED_MOVING')
+        }
+
 
         // --- END OF UPDATE ---
     }
